@@ -44,5 +44,5 @@ A 68K trampoline replaces the render branch at 0xC11E to expand the valid range 
 
 ## Special thanks
 
-- Pretty much any Motorola 68K reference I could find, but shout out to And-0 for his Mega Drive programming git:
+- Pretty much any Motorola 68K reference I could find, but shout out to And-0 for their Mega Drive programming git:
 https://github.com/And-0/awesome-megadrive
