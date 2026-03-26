@@ -17,7 +17,7 @@ The Shadowrun Font Editor and Glyph Tool is an editor for Shadowrun on the Sega 
 ## Running the Editor:
 
 * HMTL: Just save file as .html and double-click from your local folder; it will open in your default browser.
-* Online: The editor is live at: this space pending
+* Online: The editor is live at: https://4lorn5.github.io/Shadowrun-Font-Editor-and-Glyph-Tool/
 
 ## Usage:
 
