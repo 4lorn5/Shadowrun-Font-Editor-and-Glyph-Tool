@@ -21,7 +21,7 @@ The Shadowrun Font Editor and Glyph Tool is an editor for Shadowrun on the Sega 
 
 ## Usage:
 
-**- CHOOSE ROM:** Choose your Shadowrun (.bin, .gen, and .md extensions accepted).
+**- CHOOSE ROM:** Choose your Shadowrun ROM (.bin, .gen, and .md extensions accepted).
 
 **- ORIGINAL FONT:** Displays the game's font family.
 
