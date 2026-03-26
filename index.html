@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shadowrun Genesis - Font Tool</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+
+  :root {
+    --bg: #0a0c0f;
+    --panel: #0f1318;
+    --border: #1e2a1e;
+    --green: #00ff41;
+    --green-dim: #00aa2a;
+    --green-dk: #003310;
+    --amber: #ffaa00;
+    --red: #ff3333;
+    --text: #c8e6c8;
+    --text-dim: #5a7a5a;
+    --grid: rgba(0,255,65,0.15);
+    --scanline: rgba(0,255,65,0.03);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background:
+      radial-gradient(ellipse at top, #0d1a0d 0%, var(--bg) 62%),
+      linear-gradient(180deg, #09100b 0%, var(--bg) 100%);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    min-height: 100vh;
+    overflow-x: hidden;
+    padding: 18px;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    background: repeating-linear-gradient(
+      0deg,
+      var(--scanline) 0px,
+      var(--scanline) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px 14px;
+    margin: -18px -18px 16px -18px;
+    background: linear-gradient(180deg, #0d1a0d 0%, var(--bg) 100%);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  header .title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    color: #00FF3C;
+    text-shadow: 0 0 20px rgba(0,255,65,0.45);
+    line-height: 1;
+  }
+  header .title .run { color: #FFAA00; }
+  header .subtitle {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+  .rom-status {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    box-shadow: none;
+    transition: background 0.2s, box-shadow 0.2s;
+  }
+  .status-dot.active {
+    background: var(--green);
+    box-shadow: 0 0 8px rgba(0,255,65,0.6);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  @keyframes amberPulse {
+    0%,100% { box-shadow: 0 0 0 rgba(255,170,0,0.0); }
+    50% { box-shadow: 0 0 12px rgba(255,170,0,0.22); }
+  }
+
+  h2 {
+    color: var(--green-dim);
+    font-size: 11px;
+    margin-bottom: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .section {
+    background:
+      linear-gradient(180deg, rgba(13,26,13,0.26) 0%, rgba(15,19,24,0.98) 100%);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px;
+    margin-bottom: 14px;
+    box-shadow: inset 0 0 0 1px rgba(0,255,65,0.02);
+  }
+  .row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+  .row.tight { margin-bottom: 4px; }
+  .row.space-between { justify-content: space-between; }
+  button, label.btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 7px 12px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-radius: 2px;
+    transition: all 0.15s;
+  }
+  button:hover:not(:disabled), label.btn:hover {
+    border-color: var(--green-dim);
+    color: var(--green);
+    background: var(--green-dk);
+    box-shadow: 0 0 12px rgba(0,255,65,0.18);
+  }
+  button.primary, label.btn.primary {
+    border-color: var(--green-dim);
+    color: var(--green);
+    background: var(--green-dk);
+  }
+  button.primary:hover:not(:disabled), label.btn.primary:hover {
+    background: var(--green-dim);
+    color: #000;
+    box-shadow: 0 0 12px rgba(0,255,65,0.35);
+  }
+  button:disabled { opacity: 0.35; cursor: default; }
+  input[type=file] { display: none; }
+
+  .status { padding: 4px 8px; border-radius: 2px; font-size: 11px; display: inline-block; }
+  .ok  { background: #0a2010; border: 1px solid var(--green-dim); color: var(--green); }
+  .err { background: #200a0a; border: 1px solid #a03030; color: #ff7070; }
+  .warn{ background: #1a1400; border: 1px solid #806020; color: var(--amber); }
+  .hint { color: var(--text-dim); font-size: 11px; line-height: 1.5; }
+  .dim { color: var(--text-dim); }
+  .rom-summary {
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+  .rom-summary strong {
+    color: var(--green);
+    font-weight: normal;
+  }
+
+  .panel-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 16px;
+  }
+  @media (max-width: 980px) {
+    .panel-grid { grid-template-columns: 1fr; }
+  }
+
+  .atlas-wrap {
+    overflow-x: auto;
+    padding: 8px;
+    border: 1px solid var(--border);
+    background:
+      radial-gradient(ellipse at center, #0d1a0d 0%, #091109 70%),
+      repeating-linear-gradient(0deg, transparent, transparent 31px, rgba(0,255,65,0.03) 31px, rgba(0,255,65,0.03) 32px),
+      repeating-linear-gradient(90deg, transparent, transparent 31px, rgba(0,255,65,0.03) 31px, rgba(0,255,65,0.03) 32px);
+  }
+  canvas { image-rendering: pixelated; display: block; }
+  .pixel-grid {
+    cursor: crosshair;
+    border: 1px solid var(--border);
+    background: #081008;
+    box-shadow: inset 0 0 0 1px rgba(0,255,65,0.03);
+  }
+
+  table { border-collapse: collapse; font-size: 11px; width: 100%; }
+  td, th { border: 1px solid var(--border); padding: 4px 8px; }
+  th { background: #0d1a10; color: var(--green-dim); }
+  select {
+    background: #081008;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: inherit;
+    padding: 2px 4px;
+  }
+
+  #step2, #step3, #step4 { display: none; }
+
+  .glyph-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--row-size, 6), 1fr);
+    gap: 8px;
+  }
+  .slot-cell {
+    background: #0a0f0a;
+    border: 1px solid var(--border);
+    padding: 6px;
+    text-align: center;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-transform: none;
+    letter-spacing: 0;
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s, background 0.15s;
+  }
+  .slot-cell:hover {
+    border-color: var(--green-dim);
+    background: rgba(0,255,65,0.04);
+    transform: translateY(-1px);
+  }
+  .slot-cell.active {
+    border-color: var(--green-dim);
+    box-shadow: 0 0 6px rgba(0,255,65,0.3);
+  }
+  .slot-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+  .tool-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .editor-title {
+    font-size: 11px;
+    color: var(--green);
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  #btnAddRow {
+    border-color: #8a6418;
+    color: var(--amber);
+    background: rgba(255,170,0,0.08);
+    box-shadow: inset 0 0 0 1px rgba(255,170,0,0.06);
+  }
+  #btnAddRow:hover:not(:disabled) {
+    border-color: var(--amber);
+    color: #111;
+    background: var(--amber);
+    box-shadow: 0 0 14px rgba(255,170,0,0.28);
+  }
+  #btnAddRow:not(:disabled) {
+    animation: amberPulse 2.2s infinite;
+  }
+  #toggleExpand.primary {
+    box-shadow: 0 0 12px rgba(0,255,65,0.2);
+  }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="title">SHADOW<span class="run">RUN</span></div>
+    <div class="subtitle">Shadowrun Font Editor and Glyph Tool</div>
+  </div>
+  <div class="rom-status">
+    <div class="status-dot" id="romStatusDot"></div>
+    <span id="romStatusLabel">NO ROM LOADED</span>
+  </div>
+</header>
+
+<!-- ── STEP 1: LOAD ROM ─────────────────────────────────── -->
+<div class="section" id="step1">
+  <h2>Step 1 — Load ROM</h2>
+  <div class="row">
+    <label class="btn primary" for="romFile">Choose ROM</label>
+    <input type="file" id="romFile" accept=".md,.gen,.bin">
+    <span id="romName" class="dim">no file selected</span>
+  </div>
+  <div class="row tight">
+    <button type="button" id="toggleExpand">Allow ROM expansion: OFF</button>
+    <span class="hint" id="expandHint">Keeps original ROM size and limits slot rows.</span>
+  </div>
+  <div id="loadStatus"></div>
+  <div class="rom-summary" id="romSummary">ROM summary: —</div>
+</div>
+
+<!-- ── STEP 2: FONT ATLAS + DUMP ───────────────────────── -->
+<div class="section" id="step2">
+  <h2>Step 2 — Original Font</h2>
+  <p class="hint">85 tiles · 4bpp · pulled from the ROM pointer. Use external tools if needed.</p>
+  <div class="panel-grid">
+    <div>
+      <div class="atlas-wrap"><canvas id="atlasCanvas"></canvas></div>
+      <div class="row" style="margin-top:8px;">
+        <button id="btnDump">Dump font.bin</button>
+        <label class="btn" for="fontImport">Import font.bin</label>
+        <input type="file" id="fontImport" accept=".bin">
+        <span id="dumpStatus"></span>
+        <span id="importStatus"></span>
+      </div>
+      <div class="hint" id="atlasHover">Hover tile: —</div>
+    </div>
+    <div>
+      <p class="hint" id="step2HintExtra" style="margin-top:4px;">font.bin = 2720 bytes (85 tiles × 32 bytes, raw 4bpp). Edit in YY-CHR or Tile Molester (4bpp Genesis mode). Extra glyphs are stored separately and uploaded via a secondary VRAM upload; font.bin stays at 85 tiles.</p>
+      <div id="budgetMeter" style="margin-top:8px; font-size:11px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── STEP 3: DRAW EXTRA GLYPHS + MAP ────────────────── -->
+<div class="section" id="step3">
+  <h2>Step 3 — Custom Glyphs</h2>
+  <p class="hint" id="step3Hint" style="margin-bottom:8px;">
+    Draw extra accent glyphs (é, ñ, ü, etc.). Left-click = ink, right-click = erase.
+    These are <em>new tiles</em> uploaded from a separate blob into VRAM — they don't touch any existing font tile.
+  </p>
+
+  <div class="panel-grid">
+    <div>
+      <div class="row space-between">
+        <div class="hint">Glyph slots</div>
+        <button type="button" id="btnAddRow">Add Row</button>
+      </div>
+      <div class="glyph-grid" id="glyphSlotGrid"></div>
+    </div>
+    <div>
+      <div class="editor-title" id="activeGlyphTitle">Glyph slot 0 (char $81)</div>
+      <canvas id="activeGlyphCanvas" class="pixel-grid"></canvas>
+      <div class="tool-grid">
+        <button type="button" id="btnFlipH">Mirror (H-Flip)</button>
+        <button type="button" id="btnFlipV">Invert (V-Flip)</button>
+        <button type="button" id="btnRotateCW">Rotate ↻</button>
+        <button type="button" id="btnRotateCCW">Rotate ↺</button>
+        <button type="button" id="btnClearSlot">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:12px;">
+    <h2 style="margin-bottom:6px;">Char Code Mapping</h2>
+    <p class="hint" style="margin-bottom:6px;">Assign each char code to one of the glyphs you drew above, or leave unused.</p>
+    <table id="remapTable">
+      <thead><tr><th>Char code</th><th>Glyph slot</th><th>Preview</th></tr></thead>
+      <tbody id="remapBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── STEP 4: EXPORT ROM ──────────────────────────────── -->
+<div class="section" id="step4">
+  <h2>Step 4 — Export patched ROM</h2>
+  <p class="hint" id="step4Hint" style="margin-bottom:8px;">
+    Writes: font VRAM base shift + recompressed font (85 tiles) at the font pointer (relocated if needed) ·
+    CTE entries adjusted · CTE[92-107] → extra tile indices $05F0-$05FF · renderer patch at $C11E ·
+    extra tiles stored in a separate ROM blob and uploaded to VRAM once.
+    Extra tiles land below $C000 to avoid HUD overlap.
+  </p>
+  <div class="row">
+    <button id="btnExport" class="primary">Export patched ROM</button>
+    <span id="exportStatus"></span>
+  </div>
+  <div id="budgetBar" style="margin-top:6px; font-size:11px;"></div>
+</div>
+
+<script>
+'use strict';
+
+// ── Constants ─────────────────────────────────────────────────────────────
+const FONT_ADDR            = 0x0C1064;
+const FONT_PTR_PATCH_ADDR  = 0x00C0CA;   // MOVEA.L #$0C1064, A3
+const FONT_BUDGET          = 699;
+const FONT_TILES           = 85;
+const BYTES_PER_TILE       = 32;
+const ATLAS_COLS           = 16;
+const ATLAS_SCALE          = 3;
+const CTE_BASE             = 0x0C1320;
+const CTE_ACCENT_BASE      = 0x0C13D8;   // CTE[92..] — extra entries for $81+
+const ACCENT_CODE_START    = 0x81;
+const ACCENT_ENTRY_BASE    = 92;         // table index for first accent entry
+const ACCENT_OFFSET_BASE   = ACCENT_ENTRY_BASE * 2;
+const EXTRA_SLOTS_DESIRED  = 16;
+const ROW_SIZE_BASE        = 6;
+const ROW_SIZE_EXPANDED    = 8;
+const VRAM_BASE_OLD        = 0x0000B560;
+const RINGBUF_ADDR         = 0x00FFBF40; // A1 for decompressor ring buffer
+const ROM_HEADER_START     = 0x0001A0;
+const ROM_HEADER_END       = 0x0001A4;
+const ROM_CHECKSUM_ADDR    = 0x00018E;
+const ROM_MIN_EXPAND       = 0x400000;   // expand to 4MB when needed
+// Default lazy-init/trampoline addresses (used when expansion is allowed).
+// In no-expansion mode, these are relocated into a free 0xFF run.
+const LAZY_INIT_ADDR       = 0x1FFFC4;   // lazy-init that jumps to trampoline
+const TRAMPOLINE_ADDR      = 0x1FFE50;   // trampoline relocated here
+const INIT_FLAG_ADDR       = 0x00FFFE00; // work RAM flag
+const RENDERER_PATCH_ADDR  = 0xC11E;
+const RENDERER_PATCH_OLD   = new Uint8Array([0xE3,0x08,0x6B,0x00,0x00,0x0A]);
+
+// Lazy-init code is generated dynamically to optionally upload extra tiles.
+
+// Trampoline relocated to $1FFE50 (52 bytes, identical logic, updated bounds):
+// BCC/BCS offsets unchanged ($1A/$18) since relative to same instruction positions.
+// JMP targets updated: $C124, $C12C, $C110 unchanged (absolute).
+// $1FFE50 [0]  CMPI.B #upper,D0
+// $1FFE54 [4]  BCC.S +$1A → $1FFE70  (not_accent)
+// $1FFE56 [6]  CMPI.B #$81,D0
+// $1FFE5A [10] BCS.S +$18 → $1FFE74  (do_newline)
+// $1FFE5C [12] ANDI.W #$FF,D0
+// $1FFE60 [16] SUBI.W #$81,D0
+// $1FFE64 [20] LSL.W #1,D0
+// $1FFE66 [22] ADDI.W #$B8,D0
+// $1FFE6A [26] JMP $C110
+// $1FFE70 [32] ASL.B #1,D0
+// $1FFE72 [34] BMI.S +$0A → $1FFE7E  (do_epilogue)
+// $1FFE74 [36] JMP $C124
+// $1FFE7A [42] NOP
+// $1FFE7C [44] NOP
+// $1FFE7E [46] JMP $C12C
+const VRAM_DEST_PATCH_ADDR = 0xC0D0;
+const VRAM_DEST_OLD        = new Uint8Array([0x00, 0x00, 0xB5, 0x60]); // raw 32-bit addr → $B560
+const OLD_TILE_BASE        = 0x05AB;   // first font tile index in original ROM ($05AB–$05FF)
+
+function buildTrampolineCode(accentUpper) {
+  return new Uint8Array([
+    // $1FFE50 [0]
+    0x0C,0x00,0x00,accentUpper,    // CMPI.B #upper, D0
+    0x64,0x1A,                     // BCC.S  +$1A → $1FFE70  (not_accent)
+    // $1FFE56 [6]
+    0x0C,0x00,0x00,0x81,           // CMPI.B #$81, D0
+    0x65,0x18,                     // BCS.S  +$18 → $1FFE74  (do_newline: $80)
+    // $1FFE5C [12] accent: D0.B = $81-$(upper-1)
+    0x02,0x40,0x00,0xFF,           // ANDI.W #$00FF, D0
+    0x04,0x40,0x00,0x81,           // SUBI.W #$81, D0
+    0xE3,0x48,                     // LSL.W  #1, D0
+    0x06,0x40,(ACCENT_OFFSET_BASE >> 8) & 0xFF, ACCENT_OFFSET_BASE & 0xFF, // ADDI.W #$B8, D0
+    0x4E,0xF9,0x00,0x00,0xC1,0x10, // JMP $C110
+    // $1FFE70 [32] not_accent
+    0xE3,0x08,                     // ASL.B  #1, D0
+    0x6B,0x0A,                     // BMI.S  +$0A → $1FFE7E  (do_epilogue)
+    // $1FFE74 [36] do_newline
+    0x4E,0xF9,0x00,0x00,0xC1,0x24, // JMP $C124
+    0x4E,0x71,                     // NOP
+    0x4E,0x71,                     // NOP (→ aligns to $1FFE7E)
+    // $1FFE7E [46] do_epilogue
+    0x4E,0xF9,0x00,0x00,0xC1,0x2C, // JMP $C12C
+  ]);
+}
+
+// ── State ─────────────────────────────────────────────────────────────────
+let romData    = null;   // original Uint8Array
+let romName    = '';
+let romExt     = '.md';
+let fontBin    = null;   // 85-tile 4bpp Uint8Array (from ROM decompression)
+let fontDataAddr = FONT_ADDR; // current ROM pointer for font data
+let allowExpansion = false;
+let rowSize = ROW_SIZE_BASE;
+let atlasTileCount = FONT_TILES;
+// Extra glyph slots: up to 16, each 32 bytes (one 8x8 tile, 4bpp).
+const MAX_SLOTS   = EXTRA_SLOTS_DESIRED;
+const SLOT_PIXELS = 32;  // bytes per slot (8×8 × 4bpp)
+let activeSlots = ROW_SIZE_BASE;
+let shiftTiles  = activeSlots; // tiles reserved at end of font range
+let newTileBase = OLD_TILE_BASE - shiftTiles;
+let vramExtraBase = newTileBase + FONT_TILES;
+let vramDestNew = VRAM_BASE_OLD - (shiftTiles * BYTES_PER_TILE);
+let accentUpper = ACCENT_CODE_START + activeSlots;
+let slotPixels  = Array.from({length: MAX_SLOTS}, () => new Uint8Array(SLOT_PIXELS));
+// accentMap[n] = slot index (0..MAX_SLOTS-1) or -1 = unused
+let accentMap   = new Array(MAX_SLOTS).fill(-1);
+const INK_NIB   = 0xB;   // nibble value for inked pixels (palette index 3)
+let selectedSlot = 0;
+
+// ── Decompress ────────────────────────────────────────────────────────────
+function decompress(rom, startOffset) {
+  const RING = 0x800, MASK = 0x7FF;
+  let ring = new Uint8Array(RING), rp = 0, pos = startOffset, out = [];
+  const total = ((rom[pos] << 8) | rom[pos+1]) + 1; pos += 2;
+  while (out.length < total) {
+    const flag = rom[pos++];
+    for (let bit = 7; bit >= 0 && out.length < total; bit--) {
+      if (!((flag >> bit) & 1)) {
+        const b = rom[pos++]; out.push(b); ring[rp]=b; rp=(rp+1)&MASK;
+      } else {
+        const b0 = rom[pos++], b1 = rom[pos++];
+        if (b0 & 0x80) {
+          const len = (b0&0x0F)+3, off11 = ((b1<<3)|((b0>>4)&7))&MASK;
+          let src = (rp - off11) & MASK;
+          for (let i=0; i<len && out.length<total; i++) {
+            const b=ring[src&MASK]; out.push(b); ring[rp]=b; rp=(rp+1)&MASK; src++;
+          }
+        } else {
+          const len=(b0&0x7F)+3, fill=b1;
+          for (let i=0; i<len && out.length<total; i++) {
+            out.push(fill); ring[rp]=fill; rp=(rp+1)&MASK;
+          }
+        }
+      }
+    }
+  }
+  return new Uint8Array(out);
+}
+
+// ── Compress ──────────────────────────────────────────────────────────────
+function compress(input) {
+  const n=input.length, RS=0x800, INF=0x7FFFFFFF, LIT=9, REF=17;
+  const dpCost=new Int32Array(n+1).fill(INF), dpPrev=new Int32Array(n+1).fill(-1);
+  const dpType=new Uint8Array(n+1), dpLen=new Uint8Array(n+1);
+  const dpFill=new Uint8Array(n+1), dpLzSrc=new Uint16Array(n+1);
+  const sRing=new Uint8Array(RS); let sRp=0;
+  dpCost[0]=0;
+  for (let i=0; i<n; i++) {
+    if (dpCost[i]===INF) continue;
+    const base=dpCost[i];
+    const lc=base+LIT;
+    if (lc<dpCost[i+1]){dpCost[i+1]=lc;dpPrev[i+1]=i;dpType[i+1]=0;dpLen[i+1]=1;dpFill[i+1]=input[i];}
+    let rl=0; const rb=input[i];
+    while(rl<130&&i+rl<n&&input[i+rl]===rb)rl++;
+    if(rl>=3){const rc=base+REF;for(let L=3;L<=rl;L++)if(rc<dpCost[i+L]){dpCost[i+L]=rc;dpPrev[i+L]=i;dpType[i+L]=2;dpLen[i+L]=L;dpFill[i+L]=rb;}}
+    const ml=Math.min(18,n-i),lzc=base+REF;
+    for(let s=0;s<RS;s++){let len=0;while(len<ml&&sRing[(s+len)&(RS-1)]===input[i+len])len++;if(len>=3)for(let L=3;L<=len;L++)if(lzc<dpCost[i+L]){dpCost[i+L]=lzc;dpPrev[i+L]=i;dpType[i+L]=1;dpLen[i+L]=L;dpLzSrc[i+L]=s;}}
+    sRing[sRp]=input[i];sRp=(sRp+1)&(RS-1);
+  }
+  const sRef=new Uint8Array(n),rLen=new Uint8Array(n),rType=new Uint8Array(n),rFill=new Uint8Array(n),rSrc=new Uint16Array(n);
+  {let p=n;while(p>0){const f=dpPrev[p];if(dpType[p]!==0){sRef[f]=1;rLen[f]=dpLen[p];rType[f]=dpType[p];rFill[f]=dpFill[p];rSrc[f]=dpLzSrc[p];}p=f;}}
+  const out=[],hdr=n-1;out.push((hdr>>8)&0xFF,hdr&0xFF);
+  const eR=new Uint8Array(RS);let erp=0,i=0;
+  while(i<n){
+    const fi=out.length;out.push(0);let flag=0;
+    for(let bit=0;bit<8&&i<n;bit++){
+      if(!sRef[i]){out.push(input[i]);eR[erp]=input[i];erp=(erp+1)&(RS-1);i++;}
+      else if(rType[i]===2){const L=rLen[i],fill=rFill[i];out.push((L-3)&0x7F,fill);for(let k=0;k<L;k++){eR[erp]=fill;erp=(erp+1)&(RS-1);}i+=L;flag|=(0x80>>bit);}
+      else{const ml=Math.min(rLen[i],n-i);let bS=-1,bL=0;
+        for(let s=0;s<RS;s++){let l=0,ts=s;const tr=eR.slice();let trp=erp;while(l<ml){const b=tr[ts&(RS-1)];if(b!==input[i+l])break;tr[trp]=b;trp=(trp+1)&(RS-1);ts++;l++;}if(l>bL){bL=l;bS=s;if(l===ml)break;}}
+        if(bL>=3){const off=(erp-bS)&(RS-1);out.push(0x80|((off&7)<<4)|((bL-3)&0x0F),(off>>3)&0xFF);let s2=bS;for(let k=0;k<bL;k++){const b=eR[s2&(RS-1)];eR[erp]=b;erp=(erp+1)&(RS-1);s2++;}i+=bL;flag|=(0x80>>bit);}
+        else{out.push(input[i]);eR[erp]=input[i];erp=(erp+1)&(RS-1);i++;}}
+    }
+    out[fi]=flag;
+  }
+  return new Uint8Array(out);
+}
+
+// ── Atlas render ──────────────────────────────────────────────────────────
+function renderAtlas(pixels, tileCount) {
+  const rows = Math.ceil(tileCount / ATLAS_COLS);
+  const canvas = document.getElementById('atlasCanvas');
+  canvas.width  = ATLAS_COLS * 8 * ATLAS_SCALE;
+  canvas.height = rows * 8 * ATLAS_SCALE;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#080f08';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // 4 greens for palette 0
+  const pal = ['#080f08','#40e080','#20a050','#108030'];
+  for (let t = 0; t < tileCount; t++) {
+    const tx = (t % ATLAS_COLS) * 8 * ATLAS_SCALE;
+    const ty = Math.floor(t / ATLAS_COLS) * 8 * ATLAS_SCALE;
+    for (let py = 0; py < 8; py++) {
+      for (let px = 0; px < 8; px++) {
+        const bi = t*32 + py*4 + (px>>1);
+        const nib = (px&1) ? (pixels[bi]&0xF) : (pixels[bi]>>4);
+        ctx.fillStyle = pal[Math.min(nib,3)];
+        ctx.fillRect(tx + px*ATLAS_SCALE, ty + py*ATLAS_SCALE, ATLAS_SCALE, ATLAS_SCALE);
+      }
+    }
+  }
+  // grid overlay
+  ctx.strokeStyle = 'rgba(0,255,65,0.18)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x <= canvas.width; x += 8 * ATLAS_SCALE) {
+    ctx.beginPath(); ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, canvas.height); ctx.stroke();
+  }
+  for (let y = 0; y <= canvas.height; y += 8 * ATLAS_SCALE) {
+    ctx.beginPath(); ctx.moveTo(0, y + 0.5); ctx.lineTo(canvas.width, y + 0.5); ctx.stroke();
+  }
+  atlasTileCount = tileCount;
+  setupAtlasHover();
+}
+
+function setupAtlasHover() {
+  const canvas = document.getElementById('atlasCanvas');
+  if (!canvas || canvas.dataset.hoverInit) return;
+  canvas.dataset.hoverInit = '1';
+  const hover = document.getElementById('atlasHover');
+  canvas.addEventListener('mousemove', e => {
+    if (!hover) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = Math.floor((e.clientX - rect.left) / ATLAS_SCALE);
+    const y = Math.floor((e.clientY - rect.top) / ATLAS_SCALE);
+    const tx = Math.floor(x / 8);
+    const ty = Math.floor(y / 8);
+    const idx = ty * ATLAS_COLS + tx;
+    if (idx >= 0 && idx < atlasTileCount) {
+      hover.textContent = `Hover tile: ${idx}`;
+    } else {
+      hover.textContent = 'Hover tile: —';
+    }
+  });
+  canvas.addEventListener('mouseleave', () => {
+    if (hover) hover.textContent = 'Hover tile: —';
+  });
+}
+
+function showStatus(id, msg, type) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = `<span class="status ${type}">${msg}</span>`;
+}
+
+function readU32BE(arr, off) {
+  return ((arr[off] << 24) | (arr[off+1] << 16) | (arr[off+2] << 8) | arr[off+3]) >>> 0;
+}
+
+function writeU32BE(arr, off, val) {
+  arr[off]   = (val >>> 24) & 0xFF;
+  arr[off+1] = (val >>> 16) & 0xFF;
+  arr[off+2] = (val >>> 8)  & 0xFF;
+  arr[off+3] = val & 0xFF;
+}
+
+function writeU16BE(arr, off, val) {
+  arr[off]   = (val >>> 8) & 0xFF;
+  arr[off+1] = val & 0xFF;
+}
+
+function alignEven(v) {
+  return (v + 1) & ~1;
+}
+
+function ensureRomSize(rom, minSize) {
+  if (rom.length >= minSize) {
+    return {rom, expanded: false, oldSize: rom.length};
+  }
+  let newSize = rom.length;
+  if (newSize < ROM_MIN_EXPAND) newSize = ROM_MIN_EXPAND;
+  while (newSize < minSize) newSize <<= 1;
+  const out = new Uint8Array(newSize);
+  out.set(rom);
+  out.fill(0xFF, rom.length);
+  return {rom: out, expanded: true, oldSize: rom.length};
+}
+
+function updateChecksum(rom) {
+  const sum = calculateChecksum(rom);
+  writeU16BE(rom, ROM_CHECKSUM_ADDR, sum);
+  return sum;
+}
+
+function calculateChecksum(rom) {
+  let sum = 0;
+  for (let i = 0x200; i < rom.length; i += 2) {
+    const hi = rom[i];
+    const lo = (i + 1 < rom.length) ? rom[i + 1] : 0;
+    sum = (sum + ((hi << 8) | lo)) & 0xFFFF;
+  }
+  return sum;
+}
+
+function updateRomSummary(bytes, prefix = 'ROM summary') {
+  const el = document.getElementById('romSummary');
+  if (!el || !bytes) return;
+  const checksum = calculateChecksum(bytes);
+  const sizeMB = (bytes.length / (1024 * 1024)).toFixed(2);
+  el.innerHTML = `${prefix}: <strong>${sizeMB} MB</strong> · checksum <strong>$${checksum.toString(16).toUpperCase().padStart(4, '0')}</strong>`;
+}
+
+function buildLazyInitCode(blobAddr, vramAddr, enableUpload, trampAddr) {
+  const bytes = [];
+  const flag = INIT_FLAG_ADDR >>> 0;
+  const tramp = (trampAddr ?? TRAMPOLINE_ADDR) >>> 0;
+  // TST.B (flag).l
+  bytes.push(0x4A,0x39, (flag >>> 24) & 0xFF, (flag >>> 16) & 0xFF, (flag >>> 8) & 0xFF, flag & 0xFF);
+  if (!enableUpload) {
+    // BNE.S +8 → JMP
+    bytes.push(0x66,0x08);
+    // MOVE.B #1,(flag).l
+    bytes.push(0x13,0xFC,0x00,0x01, (flag >>> 24) & 0xFF, (flag >>> 16) & 0xFF, (flag >>> 8) & 0xFF, flag & 0xFF);
+    // JMP trampoline
+    bytes.push(0x4E,0xF9, (tramp >>> 24) & 0xFF, (tramp >>> 16) & 0xFF, (tramp >>> 8) & 0xFF, tramp & 0xFF);
+    return new Uint8Array(bytes);
+  }
+  // BNE.S (patched later)
+  const bnePos = bytes.length;
+  bytes.push(0x66,0x00);
+  // MOVE.B #1,(flag).l
+  bytes.push(0x13,0xFC,0x00,0x01, (flag >>> 24) & 0xFF, (flag >>> 16) & 0xFF, (flag >>> 8) & 0xFF, flag & 0xFF);
+  // Save regs (D0-D7/A0-A6)
+  bytes.push(0x48,0xE7,0x7F,0xFF);
+  // LEA RINGBUF_ADDR, A1
+  bytes.push(0x43,0xF9, (RINGBUF_ADDR >>> 24) & 0xFF, (RINGBUF_ADDR >>> 16) & 0xFF, (RINGBUF_ADDR >>> 8) & 0xFF, RINGBUF_ADDR & 0xFF);
+  // MOVEA.L #blobAddr, A3
+  bytes.push(0x26,0x7C, (blobAddr >>> 24) & 0xFF, (blobAddr >>> 16) & 0xFF, (blobAddr >>> 8) & 0xFF, blobAddr & 0xFF);
+  // MOVE.L #vramAddr, D0
+  bytes.push(0x20,0x3C, (vramAddr >>> 24) & 0xFF, (vramAddr >>> 16) & 0xFF, (vramAddr >>> 8) & 0xFF, vramAddr & 0xFF);
+  // JSR $00001530
+  bytes.push(0x4E,0xB9,0x00,0x00,0x15,0x30);
+  // Restore regs
+  bytes.push(0x4C,0xDF,0x7F,0xFF);
+  // JMP trampoline
+  const jmpPos = bytes.length;
+  bytes.push(0x4E,0xF9, (tramp >>> 24) & 0xFF, (tramp >>> 16) & 0xFF, (tramp >>> 8) & 0xFF, tramp & 0xFF);
+  // Patch BNE displacement to jump to JMP
+  const disp = (jmpPos - (bnePos + 2)) & 0xFF;
+  bytes[bnePos + 1] = disp;
+  return new Uint8Array(bytes);
+}
+
+function buildRendererPatch(addr) {
+  return new Uint8Array([
+    0x4E, 0xF9,
+    (addr >>> 24) & 0xFF,
+    (addr >>> 16) & 0xFF,
+    (addr >>> 8) & 0xFF,
+    addr & 0xFF
+  ]);
+}
+
+function recomputeLayout(slotCount) {
+  activeSlots = slotCount;
+  shiftTiles = slotCount;
+  newTileBase = OLD_TILE_BASE - shiftTiles;
+  vramExtraBase = newTileBase + FONT_TILES;
+  vramDestNew = VRAM_BASE_OLD - (shiftTiles * BYTES_PER_TILE);
+  accentUpper = ACCENT_CODE_START + activeSlots;
+}
+
+function updateHints() {
+  const step2 = document.getElementById('step2HintExtra');
+  if (step2) {
+    step2.textContent =
+      `font.bin = ${FONT_TILES * BYTES_PER_TILE} bytes (85 tiles × 32 bytes, raw 4bpp). ` +
+      `Edit in YY-CHR or Tile Molester (4bpp Genesis mode). ` +
+      `Imports must be exactly ${FONT_TILES * BYTES_PER_TILE} bytes. Extra glyphs are stored separately.`;
+  }
+  const step3 = document.getElementById('step3Hint');
+  if (step3) {
+    const hi = (ACCENT_CODE_START + activeSlots - 1).toString(16).toUpperCase();
+    const rowNote = allowExpansion
+      ? 'Use Add Row to reveal more glyph slots.'
+      : 'Enable ROM expansion to allow more glyph rows.';
+    step3.innerHTML =
+      `Draw up to ${activeSlots} new accent glyphs (é, ñ, ü, etc.). Left-click = ink, right-click = erase. ` +
+      `These are <em>new tiles</em> uploaded from a separate blob into VRAM — they don't touch any existing font tile. ` +
+      `Each glyph is then mapped to a char code ($81-$${hi}). ${rowNote}`;
+  }
+  const step4 = document.getElementById('step4Hint');
+  if (step4) {
+    const vramBaseNew = vramDestNew.toString(16).toUpperCase().padStart(4, '0');
+    const extraStart = vramExtraBase.toString(16).toUpperCase().padStart(4, '0');
+    const extraEnd = (vramExtraBase + activeSlots - 1).toString(16).toUpperCase().padStart(4, '0');
+    const cteEnd = (ACCENT_ENTRY_BASE + activeSlots - 1);
+    step4.innerHTML =
+      `Writes: font VRAM base shift + recompressed font (85 tiles) at the font pointer (relocated if needed) · CTE entries adjusted · ` +
+      `CTE[${ACCENT_ENTRY_BASE}-${cteEnd}] → extra tile indices $${extraStart}-$${extraEnd} · renderer patch at $C11E · ` +
+      `extra tiles stored in a separate ROM blob and uploaded once. ` +
+      `Extra tiles land below $C000 to avoid HUD overlap. (VRAM base $B560→$${vramBaseNew})`;
+  }
+}
+
+function updateBudgetMeter() {
+  if (!fontBin) return;
+  const baseComp = compress(fontBin);
+  const baseUsed = baseComp.length;
+  const remaining = FONT_BUDGET - baseUsed;
+  const pct = Math.round((baseUsed / FONT_BUDGET) * 100);
+  const barWidth = Math.min(300, Math.round((baseUsed / FONT_BUDGET) * 300));
+  document.getElementById('budgetMeter').innerHTML =
+    `<div style="margin-bottom:4px;">
+       <span class="status ${remaining < 0 ? 'err' : remaining < 80 ? 'warn' : 'ok'}">
+         Base font: ${baseUsed}/${FONT_BUDGET}b used (${pct}%) · ${remaining}b free
+       </span>
+     </div>
+     <div style="background:#081008;border:1px solid #1a3020;width:300px;height:8px;border-radius:2px;margin-bottom:4px;">
+       <div style="background:${remaining<0?'#a03030':remaining<80?'#806020':'#30a050'};width:${barWidth}px;height:100%;border-radius:2px;"></div>
+     </div>
+     <span class="hint">Extra glyphs are stored in a separate ROM blob and do not count toward the font budget.</span>`;
+}
+
+function updateExpansionUI() {
+  const btn = document.getElementById('toggleExpand');
+  if (btn) {
+    btn.textContent = allowExpansion ? 'Allow ROM expansion: ON' : 'Allow ROM expansion: OFF';
+    btn.classList.toggle('primary', allowExpansion);
+  }
+  const hint = document.getElementById('expandHint');
+  if (hint) {
+    hint.textContent = allowExpansion
+      ? 'ROM can expand to store extra glyphs.'
+      : 'Keeps original ROM size and limits slot rows.';
+  }
+  const addBtn = document.getElementById('btnAddRow');
+  if (addBtn) addBtn.disabled = !allowExpansion || activeSlots >= MAX_SLOTS;
+  const grid = document.getElementById('glyphSlotGrid');
+  if (grid) grid.style.setProperty('--row-size', rowSize);
+}
+
+function applyExpansionMode(refreshUI = true) {
+  rowSize = allowExpansion ? ROW_SIZE_EXPANDED : ROW_SIZE_BASE;
+  let targetSlots = activeSlots;
+  if (allowExpansion && activeSlots < rowSize) targetSlots = rowSize;
+  if (!allowExpansion && activeSlots > rowSize) targetSlots = rowSize;
+  if (targetSlots !== activeSlots) {
+    activeSlots = targetSlots;
+    if (selectedSlot >= activeSlots) selectedSlot = activeSlots - 1;
+    for (let i = activeSlots; i < MAX_SLOTS; i++) accentMap[i] = -1;
+  }
+  recomputeLayout(activeSlots);
+  updateExpansionUI();
+  if (refreshUI && romData) {
+    updateHints();
+    buildExtraTileEditor();
+    rebuildRemapUI();
+    renderActiveSlot();
+  }
+}
+
+function findFreeRun(rom, minSize, fillByte, maxEnd) {
+  const end = Math.min(maxEnd ?? rom.length, rom.length);
+  let runStart = -1;
+  let runLen = 0;
+  for (let i = 0; i < end; i++) {
+    if (rom[i] === fillByte) {
+      if (runStart < 0) runStart = i;
+      runLen++;
+      if (runLen >= minSize) {
+        return {start: runStart, size: runLen};
+      }
+    } else {
+      runStart = -1;
+      runLen = 0;
+    }
+  }
+  return null;
+}
+
+function findLastRun(rom, minSize, fillByte) {
+  let i = rom.length - 1;
+  while (i >= 0) {
+    while (i >= 0 && rom[i] !== fillByte) i--;
+    if (i < 0) break;
+    const end = i;
+    while (i >= 0 && rom[i] === fillByte) i--;
+    const start = i + 1;
+    const len = end - start + 1;
+    if (len >= minSize) return {start, size: len};
+  }
+  return null;
+}
+
+// ── STEP 1: Load ROM ──────────────────────────────────────────────────────
+document.getElementById('toggleExpand').addEventListener('click', () => {
+  allowExpansion = !allowExpansion;
+  applyExpansionMode(false);
+});
+
+document.getElementById('romFile').addEventListener('change', async e => {
+  const file = e.target.files[0]; if (!file) return;
+  const buf = await file.arrayBuffer();
+  romData = new Uint8Array(buf);
+  romName = file.name;
+  const dot = file.name.lastIndexOf('.');
+  romExt = dot >= 0 ? file.name.slice(dot) : '.md';
+  document.getElementById('romName').textContent = file.name;
+
+  // Validate
+  if (romData.length < 0x200000) {
+    showStatus('loadStatus', `File too small (${romData.length} bytes)`, 'err'); return;
+  }
+  // Check VRAM dest patch site (accept original or prior patched values)
+  const vramDest = readU32BE(romData, VRAM_DEST_PATCH_ADDR);
+  const vramKnown = [
+    VRAM_BASE_OLD,
+    VRAM_BASE_OLD - (4 * BYTES_PER_TILE),
+    VRAM_BASE_OLD - (ROW_SIZE_BASE * BYTES_PER_TILE),
+    VRAM_BASE_OLD - (ROW_SIZE_EXPANDED * BYTES_PER_TILE),
+    VRAM_BASE_OLD - (16 * BYTES_PER_TILE),
+  ];
+  if (!vramKnown.includes(vramDest)) {
+    showStatus('loadStatus', `VRAM dest bytes at $C0D0 not recognized — wrong ROM?`, 'err');
+    return;
+  }
+  // Check renderer
+  const isPatched = romData[RENDERER_PATCH_ADDR] === 0x4E && romData[RENDERER_PATCH_ADDR+1] === 0xF9;
+  const rp = RENDERER_PATCH_OLD.every((b,i) => romData[RENDERER_PATCH_ADDR+i] === b) || isPatched;
+  if (!rp) {
+    showStatus('loadStatus', `Renderer at $C11E not recognized — wrong ROM?`, 'err'); return;
+  }
+
+  // Decompress font
+  try {
+    fontDataAddr = readU32BE(romData, FONT_PTR_PATCH_ADDR);
+    if (fontDataAddr < 0 || fontDataAddr + 2 >= romData.length) {
+      showStatus('loadStatus', `Font pointer at $C0CA is out of range`, 'err'); return;
+    }
+    fontBin = decompress(romData, fontDataAddr);
+    if (fontBin.length !== FONT_TILES * BYTES_PER_TILE) {
+      showStatus('loadStatus', `Unexpected font size: ${fontBin.length} bytes`, 'err'); return;
+    }
+  } catch(ex) {
+    showStatus('loadStatus', `Decompression failed: ${ex}`, 'err'); return;
+  }
+
+  const statusDot = document.getElementById('romStatusDot');
+  const statusLabel = document.getElementById('romStatusLabel');
+  if (statusDot) statusDot.classList.add('active');
+  if (statusLabel) statusLabel.textContent = file.name;
+  showStatus('loadStatus', `Loaded ✓  ${romData.length} bytes  ·  font: ${fontBin.length} bytes (${FONT_TILES} tiles)`, 'ok');
+  updateRomSummary(romData, 'Loaded ROM');
+  document.getElementById('step2').style.display = 'block';
+  document.getElementById('step3').style.display = 'block';
+  document.getElementById('step4').style.display = 'block';
+  slotPixels = Array.from({length: MAX_SLOTS}, () => new Uint8Array(SLOT_PIXELS));
+  accentMap = new Array(MAX_SLOTS).fill(-1);
+  renderAtlas(fontBin, FONT_TILES);
+  applyExpansionMode();
+  updateHints();
+  rebuildRemapUI();
+  updateBudgetMeter();
+});
+
+// ── STEP 2: Dump ──────────────────────────────────────────────────────────
+document.getElementById('btnDump').addEventListener('click', () => {
+  if (!fontBin) return;
+  const blob = new Blob([fontBin], {type:'application/octet-stream'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'font.bin';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showStatus('dumpStatus', 'font.bin downloaded ✓', 'ok');
+});
+
+document.getElementById('fontImport').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const buf = await file.arrayBuffer();
+  const expected = FONT_TILES * BYTES_PER_TILE;
+  if (buf.byteLength !== expected) {
+    showStatus('importStatus', `font.bin must be exactly ${expected} bytes`, 'err');
+    e.target.value = '';
+    return;
+  }
+  fontBin = new Uint8Array(buf);
+  renderAtlas(fontBin, FONT_TILES);
+  updateBudgetMeter();
+  showStatus('importStatus', 'font.bin imported ✓', 'ok');
+  e.target.value = '';
+});
+
+// ── Pixel helpers ──────────────────────────────────────────────────────────
+function slotGetPixel(slot, px, py) {
+  const bi = py*4 + (px>>1);
+  const b = slotPixels[slot][bi];
+  return (px&1) ? (b&0xF) : (b>>4);
+}
+function slotSetPixel(slot, px, py, inkOn) {
+  const bi = py*4 + (px>>1);
+  let b = slotPixels[slot][bi];
+  const nib = inkOn ? INK_NIB : 0;
+  if (px&1) b = (b&0xF0) | nib;
+  else       b = (b&0x0F) | (nib<<4);
+  slotPixels[slot][bi] = b;
+}
+function slotHasInk(slot) {
+  return slotPixels[slot].some(b => b !== 0);
+}
+
+// ── Extra tile editor ──────────────────────────────────────────────────────
+const EDIT_SCALE = 28;
+const PREVIEW_SCALE = 6;
+let editorBound = false;
+
+function buildExtraTileEditor() {
+  const grid = document.getElementById('glyphSlotGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  grid.style.setProperty('--row-size', rowSize);
+
+  for (let s = 0; s < activeSlots; s++) {
+    const cell = document.createElement('button');
+    cell.type = 'button';
+    cell.className = 'slot-cell' + (s === selectedSlot ? ' active' : '');
+    cell.dataset.slot = s;
+    cell.addEventListener('click', () => {
+      selectedSlot = s;
+      updateActiveTitle();
+      updateSlotSelection();
+      renderActiveSlot();
+    });
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 8 * PREVIEW_SCALE;
+    canvas.height = 8 * PREVIEW_SCALE;
+    canvas.dataset.slotPreview = s;
+    cell.appendChild(canvas);
+
+    const label = document.createElement('div');
+    label.className = 'slot-label';
+    const code = ACCENT_CODE_START + s;
+    label.textContent = `$${code.toString(16).toUpperCase()}`;
+    cell.appendChild(label);
+
+    grid.appendChild(cell);
+    renderSlotPreview(s);
+  }
+
+  bindEditorEvents();
+  updateActiveTitle();
+  updateSlotSelection();
+  renderActiveSlot();
+
+  const addBtn = document.getElementById('btnAddRow');
+  if (addBtn && !addBtn.dataset.bound) {
+    addBtn.dataset.bound = '1';
+    addBtn.addEventListener('click', () => {
+      if (!allowExpansion) return;
+      const next = Math.min(MAX_SLOTS, activeSlots + rowSize);
+      if (next !== activeSlots) {
+        activeSlots = next;
+        recomputeLayout(activeSlots);
+        updateHints();
+        buildExtraTileEditor();
+        rebuildRemapUI();
+      }
+    });
+  }
+  updateExpansionUI();
+}
+
+function updateSlotSelection() {
+  const cells = document.querySelectorAll('.slot-cell');
+  cells.forEach(cell => {
+    const s = parseInt(cell.dataset.slot, 10);
+    cell.classList.toggle('active', s === selectedSlot);
+  });
+}
+
+function updateActiveTitle() {
+  const el = document.getElementById('activeGlyphTitle');
+  if (!el) return;
+  const code = ACCENT_CODE_START + selectedSlot;
+  el.textContent = `Glyph slot ${selectedSlot} (char $${code.toString(16).toUpperCase()})`;
+}
+
+function bindEditorEvents() {
+  if (editorBound) return;
+  const canvas = document.getElementById('activeGlyphCanvas');
+  if (!canvas) return;
+  editorBound = true;
+  canvas.width = 8 * EDIT_SCALE;
+  canvas.height = 8 * EDIT_SCALE;
+
+  let painting = false;
+  let paintHadInkBefore = false;
+  canvas.addEventListener('mousedown', e => {
+    e.preventDefault();
+    painting = true;
+    paintHadInkBefore = slotHasInk(selectedSlot);
+    paintActiveSlot(e);
+  });
+  canvas.addEventListener('mousemove', e => { if (painting) paintActiveSlot(e); });
+  canvas.addEventListener('mouseup', () => {
+    if (painting) {
+      painting = false;
+      // Only rebuild the remap table if the slot's "has ink" state changed
+      // (i.e. the (empty) label on the dropdowns needs updating).
+      if (slotHasInk(selectedSlot) !== paintHadInkBefore) rebuildRemapUI();
+    }
+  });
+  canvas.addEventListener('mouseleave',() => painting = false);
+  canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+  const bind = (id, fn) => {
+    const btn = document.getElementById(id);
+    if (btn) btn.addEventListener('click', fn);
+  };
+  bind('btnClearSlot', () => {
+    slotPixels[selectedSlot] = new Uint8Array(SLOT_PIXELS);
+    renderActiveSlot();
+    renderSlotPreview(selectedSlot);
+    rebuildRemapUI();
+  });
+  bind('btnFlipH', () => transformSlot(selectedSlot, (x,y) => [7 - x, y]));
+  bind('btnFlipV', () => transformSlot(selectedSlot, (x,y) => [x, 7 - y]));
+  bind('btnRotateCW', () => transformSlot(selectedSlot, (x,y) => [7 - y, x]));
+  bind('btnRotateCCW', () => transformSlot(selectedSlot, (x,y) => [y, 7 - x]));
+}
+
+function paintActiveSlot(e) {
+  const canvas = document.getElementById('activeGlyphCanvas');
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = rect.width / 8;
+  const scaleY = rect.height / 8;
+  const px = Math.min(7, Math.max(0, Math.floor((e.clientX - rect.left) / scaleX)));
+  const py = Math.min(7, Math.max(0, Math.floor((e.clientY - rect.top)  / scaleY)));
+  const inkOn = !(e.buttons === 2 || e.button === 2);
+  slotSetPixel(selectedSlot, px, py, inkOn);
+  renderActiveSlot();
+  renderSlotPreview(selectedSlot);
+}
+
+function renderActiveSlot() {
+  const canvas = document.getElementById('activeGlyphCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const pal = ['#080f08', '#40e080', '#20a050', '#108030'];
+  for (let py = 0; py < 8; py++) {
+    for (let px = 0; px < 8; px++) {
+      const nib = slotGetPixel(selectedSlot, px, py);
+      ctx.fillStyle = pal[Math.min(nib, 3)];
+      ctx.fillRect(px*EDIT_SCALE, py*EDIT_SCALE, EDIT_SCALE, EDIT_SCALE);
+    }
+  }
+  ctx.strokeStyle = '#1a3020';
+  ctx.lineWidth = 0.5;
+  for (let i = 1; i < 8; i++) {
+    ctx.beginPath(); ctx.moveTo(i*EDIT_SCALE, 0); ctx.lineTo(i*EDIT_SCALE, 8*EDIT_SCALE); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, i*EDIT_SCALE); ctx.lineTo(8*EDIT_SCALE, i*EDIT_SCALE); ctx.stroke();
+  }
+}
+
+function renderSlotPreview(slot) {
+  const canvas = document.querySelector(`canvas[data-slot-preview="${slot}"]`);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const pal = ['#080f08', '#40e080', '#20a050', '#108030'];
+  for (let py = 0; py < 8; py++) {
+    for (let px = 0; px < 8; px++) {
+      const nib = slotGetPixel(slot, px, py);
+      ctx.fillStyle = pal[Math.min(nib, 3)];
+      ctx.fillRect(px*PREVIEW_SCALE, py*PREVIEW_SCALE, PREVIEW_SCALE, PREVIEW_SCALE);
+    }
+  }
+  ctx.strokeStyle = '#1a3020';
+  ctx.lineWidth = 0.5;
+  for (let i = 1; i < 8; i++) {
+    ctx.beginPath(); ctx.moveTo(i*PREVIEW_SCALE, 0); ctx.lineTo(i*PREVIEW_SCALE, 8*PREVIEW_SCALE); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, i*PREVIEW_SCALE); ctx.lineTo(8*PREVIEW_SCALE, i*PREVIEW_SCALE); ctx.stroke();
+  }
+}
+
+function transformSlot(slot, mapFn) {
+  const out = new Uint8Array(SLOT_PIXELS);
+  const setPixel = (arr, px, py, nib) => {
+    const bi = py*4 + (px>>1);
+    let b = arr[bi];
+    if (px&1) b = (b&0xF0) | (nib & 0xF);
+    else       b = (b&0x0F) | ((nib & 0xF) << 4);
+    arr[bi] = b;
+  };
+  for (let y = 0; y < 8; y++) {
+    for (let x = 0; x < 8; x++) {
+      const [nx, ny] = mapFn(x, y);
+      const nib = slotGetPixel(slot, x, y);
+      setPixel(out, nx, ny, nib);
+    }
+  }
+  slotPixels[slot] = out;
+  renderActiveSlot();
+  renderSlotPreview(slot);
+  rebuildRemapUI();
+}
+
+function slotPreviewCanvas(slot, scale) {
+  const c = document.createElement('canvas');
+  c.width = 8*scale; c.height = 8*scale;
+  c.style.imageRendering = 'pixelated';
+  const ctx = c.getContext('2d');
+  const pal = ['#080f08','#40e080','#20a050','#108030'];
+  for (let py=0; py<8; py++) for (let px=0; px<8; px++) {
+    ctx.fillStyle = pal[Math.min(slotGetPixel(slot,px,py), 3)];
+    ctx.fillRect(px*scale, py*scale, scale, scale);
+  }
+  return c;
+}
+
+// ── Remap UI ──────────────────────────────────────────────────────────────
+function rebuildRemapUI() {
+  const tbody = document.getElementById('remapBody');
+  tbody.innerHTML = '';
+  for (let n = 0; n < activeSlots; n++) {
+    const code = ACCENT_CODE_START + n;
+    const cur = accentMap[n];
+    const tr = document.createElement('tr');
+
+    const td0 = document.createElement('td');
+    td0.innerHTML = `$${code.toString(16).toUpperCase()}`;
+    tr.appendChild(td0);
+
+    const td1 = document.createElement('td');
+    const sel = document.createElement('select');
+    sel.dataset.n = n;
+    const optNone = document.createElement('option');
+    optNone.value = '-1'; optNone.textContent = '— unused —';
+    sel.appendChild(optNone);
+    for (let s = 0; s < activeSlots; s++) {
+      const opt = document.createElement('option');
+      opt.value = s;
+      opt.textContent = `Glyph slot ${s}${slotHasInk(s) ? ' ✓' : ' (empty)'}`;
+      if (!slotHasInk(s)) opt.style.color = '#3a5a3a';
+      sel.appendChild(opt);
+    }
+    sel.value = cur !== undefined ? cur : -1;
+    sel.addEventListener('change', () => { accentMap[n] = parseInt(sel.value); rebuildRemapUI(); });
+    td1.appendChild(sel);
+    tr.appendChild(td1);
+
+    const td2 = document.createElement('td');
+    const slotIdx = cur >= 0 ? cur : -1;
+    if (slotIdx >= 0) td2.appendChild(slotPreviewCanvas(slotIdx, 4));
+    else td2.textContent = '—';
+    tr.appendChild(td2);
+
+    tbody.appendChild(tr);
+  }
+}
+
+// ── STEP 4: Export ────────────────────────────────────────────────────────
+document.getElementById('btnExport').addEventListener('click', () => {
+  if (!romData || !fontBin) { showStatus('exportStatus','Load a ROM first.','err'); return; }
+
+  let rom = new Uint8Array(romData);
+  const origSize = rom.length;
+
+  // 1. Compress base font (85 tiles only)
+  const compFont = compress(fontBin);
+  let fontAddrOut = FONT_ADDR;
+  const needsFontRelocate = compFont.length > FONT_BUDGET;
+  if (needsFontRelocate && !allowExpansion) {
+    showStatus('exportStatus', `Base font too large: ${compFont.length}/${FONT_BUDGET} bytes. Enable ROM expansion or reduce edits.`, 'err');
+    return;
+  }
+
+  // 2. Build extra tile blob (only used glyphs)
+  const slotToExtraIdx = new Array(MAX_SLOTS).fill(-1);
+  let extraCount = 0;
+  for (let s = 0; s < activeSlots; s++) {
+    if (slotHasInk(s)) slotToExtraIdx[s] = extraCount++;
+  }
+  let extraComp = null;
+  if (extraCount > 0) {
+    const extraRaw = new Uint8Array(extraCount * BYTES_PER_TILE);
+    for (let s = 0; s < activeSlots; s++) {
+      const idx = slotToExtraIdx[s];
+      if (idx >= 0) extraRaw.set(slotPixels[s], idx * BYTES_PER_TILE);
+    }
+    extraComp = compress(extraRaw);
+  }
+
+  // 3. Allocate space for extra blob and code
+  const tramp = buildTrampolineCode(accentUpper);
+  let lazy = buildLazyInitCode(0, vramExtraBase * BYTES_PER_TILE, !!extraComp, TRAMPOLINE_ADDR);
+  let lazyAddr = LAZY_INIT_ADDR;
+  let trampAddr = TRAMPOLINE_ADDR;
+  let blobAddr = null;
+
+  if (!allowExpansion) {
+    const codeSize = alignEven(lazy.length) + alignEven(tramp.length) + (extraComp ? alignEven(extraComp.length) : 0);
+    const run = findLastRun(rom, codeSize, 0xFF);
+    if (!run) {
+      showStatus('exportStatus', 'No free space for glyph blob/code in original ROM. Enable expansion or reduce glyphs.', 'err');
+      return;
+    }
+    let cur = alignEven(run.start);
+    lazyAddr = cur;
+    cur = alignEven(cur + lazy.length);
+    trampAddr = cur;
+    cur = alignEven(cur + tramp.length);
+    if (extraComp) {
+      blobAddr = alignEven(cur);
+      cur = blobAddr + extraComp.length;
+    }
+    if (cur > run.start + run.size) {
+      showStatus('exportStatus', 'Glyph blob is too large for original ROM space. Enable expansion or reduce glyphs.', 'err');
+      return;
+    }
+    lazy = buildLazyInitCode(blobAddr ?? 0, vramExtraBase * BYTES_PER_TILE, !!extraComp, trampAddr);
+  } else if (needsFontRelocate || extraComp) {
+    let allocEnd = origSize;
+    if (needsFontRelocate) allocEnd = alignEven(allocEnd) + compFont.length;
+    if (extraComp) allocEnd = alignEven(allocEnd) + extraComp.length;
+    const ensured = ensureRomSize(rom, allocEnd);
+    rom = ensured.rom;
+    let cur = ensured.oldSize;
+    if (needsFontRelocate) {
+      fontAddrOut = alignEven(cur);
+      cur = fontAddrOut + compFont.length;
+    }
+    if (extraComp) {
+      blobAddr = alignEven(cur);
+      cur = blobAddr + extraComp.length;
+    }
+    lazy = buildLazyInitCode(blobAddr ?? 0, vramExtraBase * BYTES_PER_TILE, !!extraComp, trampAddr);
+  } else {
+    lazy = buildLazyInitCode(0, vramExtraBase * BYTES_PER_TILE, !!extraComp, trampAddr);
+  }
+
+  // 4. Write font data
+  if (fontAddrOut === FONT_ADDR) {
+    for (let i = 0; i < FONT_BUDGET; i++) rom[FONT_ADDR + i] = 0xFF;
+  }
+  for (let i = 0; i < compFont.length; i++) rom[fontAddrOut + i] = compFont[i];
+  writeU32BE(rom, FONT_PTR_PATCH_ADDR, fontAddrOut);
+
+  // 3. Patch VRAM destination: $B560 → shifted base
+  writeU32BE(rom, VRAM_DEST_PATCH_ADDR, vramDestNew);
+
+  // 4. Patch all 96 CTE entries: tile indices shift by -shiftTiles
+  for (let i = 0; i < 96; i++) {
+    const off = CTE_BASE + i * 2;
+    const w   = (rom[off] << 8) | rom[off+1];
+    const tidx = w & 0x7FF;
+    if (tidx >= OLD_TILE_BASE && tidx <= OLD_TILE_BASE + 84) {
+      const newW = (w & 0xF800) | ((tidx - shiftTiles) & 0x7FF);
+      rom[off]   = (newW >> 8) & 0xFF;
+      rom[off+1] = newW & 0xFF;
+    }
+  }
+
+  // 5. CTE[92..]: point to extra tile VRAM indices
+  for (let n = 0; n < activeSlots; n++) {
+    const off  = CTE_ACCENT_BASE + n * 2;
+    const slot = accentMap[n];
+    const ei   = (slot >= 0) ? slotToExtraIdx[slot] : -1;
+    const vramIdx = ei >= 0 ? (vramExtraBase + ei) : newTileBase;
+    rom[off]   = (vramIdx >> 8) & 0xFF;
+    rom[off+1] = vramIdx & 0xFF;
+  }
+
+  // 5b. Patch hardcoded cursor tile refs in FUN_0000c376 (not in CTE table)
+  // $C376: move.w #$85AB → shifted base
+  // $C3A2: move.w #$85FF → shifted base
+  const patchWord = (addr) => {
+    const w = (rom[addr] << 8) | rom[addr+1];
+    const tidx = w & 0x7FF;
+    if (tidx >= OLD_TILE_BASE && tidx <= OLD_TILE_BASE + 84) {
+      const newW = (w & 0xF800) | ((tidx - shiftTiles) & 0x7FF);
+      rom[addr] = (newW >> 8) & 0xFF;
+      rom[addr+1] = newW & 0xFF;
+    }
+  };
+  patchWord(0xC378);
+  patchWord(0xC3A4);
+
+  // 8. Write trampoline and lazy-init (optional blob upload)
+  for (let i = 0; i < tramp.length; i++) rom[trampAddr + i] = tramp[i];
+  for (let i = 0; i < lazy.length; i++) rom[lazyAddr + i] = lazy[i];
+
+  // 9. Renderer patch
+  const rOld = RENDERER_PATCH_OLD.every((b,j) => rom[RENDERER_PATCH_ADDR+j]===b);
+  const rNew = rom[RENDERER_PATCH_ADDR] === 0x4E && rom[RENDERER_PATCH_ADDR+1] === 0xF9;
+  if (!rOld && !rNew) { showStatus('exportStatus', "Renderer bytes at $C11E don't match.", 'err'); return; }
+  const rPatch = buildRendererPatch(lazyAddr);
+  for (let j=0; j<rPatch.length; j++) rom[RENDERER_PATCH_ADDR+j]=rPatch[j];
+
+  // 8. Write extra blob
+  if (extraComp) {
+    for (let i = 0; i < extraComp.length; i++) rom[blobAddr + i] = extraComp[i];
+  }
+
+  // 9. Update ROM header if expanded and refresh checksum
+  if (rom.length !== romData.length) {
+    writeU32BE(rom, ROM_HEADER_START, 0);
+    writeU32BE(rom, ROM_HEADER_END, rom.length - 1);
+  }
+  const checksum = updateChecksum(rom);
+
+  // 10. Download
+  const baseName = romName ? romName.replace(/\.[^.]+$/, '') : 'Shadowrun';
+  const outExt = romExt || '.md';
+  const fname = `${baseName}_patched${outExt}`;
+  const blob = new Blob([rom], {type:'application/octet-stream'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = fname;
+  a.click();
+  URL.revokeObjectURL(a.href);
+
+  const mapped = accentMap.slice(0, activeSlots).filter((v) => v>=0 && slotToExtraIdx[v]>=0).length;
+  const fontNote = (fontAddrOut === FONT_ADDR) ? `/${FONT_BUDGET}b` : 'b (relocated)';
+  const addrNote = (fontAddrOut === FONT_ADDR) ? '' : ` · font @ $${fontAddrOut.toString(16).toUpperCase()}`;
+  const blobNote = extraComp ? ` · blob ${extraComp.length}b @ $${blobAddr.toString(16).toUpperCase()}` : ' · blob 0b';
+  const sizeNote = (rom.length !== romData.length) ? ` · ROM ${(rom.length / (1024*1024)).toFixed(1)}MB` : '';
+  document.getElementById('budgetBar').innerHTML =
+    `<span class="status ok">Font: ${compFont.length}${fontNote} · extra tiles: ${extraCount} · accents mapped: ${mapped}/${activeSlots}${addrNote}${blobNote}${sizeNote}</span>`;
+  showStatus('exportStatus', `Saved ✓  ${fname}  ·  ${compFont.length}b  ·  ${extraCount} extra tiles  ·  ${mapped} accents  ·  checksum $${checksum.toString(16).toUpperCase().padStart(4,'0')}`, 'ok');
+  updateRomSummary(rom, 'Last export');
+});
+
+updateExpansionUI();
+</script>
+</body>
+</html>
