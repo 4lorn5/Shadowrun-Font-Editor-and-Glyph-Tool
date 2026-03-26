@@ -11,13 +11,13 @@ The Shadowrun Font Editor and Glyph Tool is an editor for Shadowrun on the Sega 
 - Up to 6 new glyphs can be drawn directly in the tool
 - Define glyph control codes directly in the tool for use in ASCII dialogue in-game
 - Built-in ROM expansion option for extra glyph space (risky but it's there)
-- Generates ready to play ROM file (requires original ROM)
+- Generates ready to play ROM file (requires original ROM) with updated checksum
 - HTML (run a lightweight, portable file; or use directly online)
 
 ## Running the Editor:
 
 * HMTL: Just save file as .html and double-click from your local folder; it will open in your default browser.
-* Online: The editor is live at: 
+* Online: The editor is live at: this space pending
 
 ## Usage:
 
